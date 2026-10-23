@@ -1,0 +1,12 @@
+app:
+  security:
+    jwt:
+      secret: test-secret-test-secret-test-secret-123456
+  bootstrap:
+    admin:
+      email: admin@test.local
+      password: admin12345
+
+logging:
+  level:
+    com.bibliotech: WARN

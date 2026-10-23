@@ -1,12 +1,15 @@
 package com.bibliotech.bibliotech.service;
 
 import com.bibliotech.bibliotech.domain.Book;
+import com.bibliotech.bibliotech.domain.LoanStatus;
 import com.bibliotech.bibliotech.dto.BookRequest;
 import com.bibliotech.bibliotech.dto.BookResponse;
 import com.bibliotech.bibliotech.exception.BusinessRuleException;
 import com.bibliotech.bibliotech.exception.ConflictException;
 import com.bibliotech.bibliotech.exception.ResourceNotFoundException;
 import com.bibliotech.bibliotech.respository.BookRepository;
+import com.bibliotech.bibliotech.respository.LoanRepository;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -22,9 +25,11 @@ import static com.bibliotech.bibliotech.respository.BookSpecifications.titleCont
 public class BookService {
 
     private final BookRepository bookRepository;
+    private final LoanRepository loanRepository;
 
-    public BookService(BookRepository bookRepository) {
+    public BookService(BookRepository bookRepository, LoanRepository loanRepository) {
         this.bookRepository = bookRepository;
+        this.loanRepository = loanRepository;
     }
 
     public Page<BookResponse> search(String title, String author, Boolean available, Pageable pageable) {
@@ -68,13 +73,15 @@ public class BookService {
 
         apply(book, req);
         book.setAvailableCopies(newAvailable);
-        return BookResponse.from(book);
+        return BookResponse.from(bookRepository.save(book));
     }
 
     @Transactional
     public void delete(Long id) {
         Book book = getOrThrow(id);
-
+        if (loanRepository.existsByBookIdAndStatus(id, LoanStatus.ACTIVE)) {
+            throw new BusinessRuleException("Não é possível excluir um livro com empréstimo ativo");
+        }
         bookRepository.delete(book);
     }
 
