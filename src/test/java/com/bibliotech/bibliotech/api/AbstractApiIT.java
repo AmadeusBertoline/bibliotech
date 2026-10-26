@@ -82,7 +82,7 @@ public abstract class AbstractApiIT {
         jdbc.execute("TRUNCATE TABLE loans, books, members RESTART IDENTITY CASCADE");
         cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
     }
-
+    
     // ---------- autenticação ----------
 
     protected String adminToken() throws Exception {
