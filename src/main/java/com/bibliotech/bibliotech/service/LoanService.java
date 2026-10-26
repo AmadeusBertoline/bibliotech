@@ -12,6 +12,7 @@ import com.bibliotech.bibliotech.respository.MemberRepository;
 
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -43,6 +44,7 @@ public class LoanService {
         this.clock = clock;
     }
 
+    @CacheEvict(cacheNames = "books", key = "#req.bookId()")
     @Transactional
     public LoanResponse create(LoanRequest req) {
         LocalDate today = today();
@@ -79,6 +81,7 @@ public class LoanService {
         return LoanResponse.from(loan, today);
     }
 
+    @CacheEvict(cacheNames = "books", allEntries = true)
     @Transactional
     public LoanResponse returnLoan(Long id) {
         LocalDate today = today();

@@ -9,7 +9,8 @@ import com.bibliotech.bibliotech.exception.ConflictException;
 import com.bibliotech.bibliotech.exception.ResourceNotFoundException;
 import com.bibliotech.bibliotech.respository.BookRepository;
 import com.bibliotech.bibliotech.respository.LoanRepository;
-
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -40,6 +41,7 @@ public class BookService {
         return bookRepository.findAll(spec, pageable).map(BookResponse::from);
     }
 
+    @Cacheable(cacheNames = "books", key = "#id")
     public BookResponse findById(Long id) {
         return BookResponse.from(getOrThrow(id));
     }
@@ -55,6 +57,7 @@ public class BookService {
         return BookResponse.from(bookRepository.save(book));
     }
 
+    @CacheEvict(cacheNames = "books", key = "#id")
     @Transactional
     public BookResponse update(Long id, BookRequest req) {
         Book book = getOrThrow(id);
@@ -76,6 +79,7 @@ public class BookService {
         return BookResponse.from(bookRepository.save(book));
     }
 
+    @CacheEvict(cacheNames = "books", key = "#id")
     @Transactional
     public void delete(Long id) {
         Book book = getOrThrow(id);

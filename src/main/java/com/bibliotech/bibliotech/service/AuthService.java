@@ -33,7 +33,8 @@ public class AuthService {
     public TokenResponse login(LoginRequest req) {
         AppUser user = userRepository.findByEmail(req.email().trim().toLowerCase()).orElse(null);
 
-        // Sempre executa o BCrypt, mesmo sem usuário, para não vazar por tempo de resposta se o e-mail existe
+        // Sempre executa o BCrypt, mesmo sem usuário, para não vazar por tempo de
+        // resposta se o e-mail existe
         String hash = user != null ? user.getPasswordHash() : dummyHash;
         boolean matches = passwordEncoder.matches(req.password(), hash);
 

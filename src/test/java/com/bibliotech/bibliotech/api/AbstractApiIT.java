@@ -1,16 +1,19 @@
 package com.bibliotech.bibliotech.api;
 
-import com.bibliotech.bibliotech.domain.AppUser;
-import com.bibliotech.bibliotech.domain.MemberStatus;
-import com.bibliotech.bibliotech.domain.Role;
-import com.bibliotech.bibliotech.respository.UserRepository;
-import com.jayway.jsonpath.JsonPath;
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.json.JsonMapper;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.cache.CacheManager;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -24,14 +27,14 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
+import com.bibliotech.bibliotech.domain.AppUser;
+import com.bibliotech.bibliotech.domain.MemberStatus;
+import com.bibliotech.bibliotech.domain.Role;
+import com.bibliotech.bibliotech.respository.UserRepository;
+import com.jayway.jsonpath.JsonPath;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -41,7 +44,8 @@ public abstract class AbstractApiIT {
     protected static final ZoneId ZONE = ZoneId.of("America/Sao_Paulo");
     private static final AtomicInteger SEQ = new AtomicInteger();
 
-    // Container singleton: sobe uma vez e é reaproveitado por todas as classes de IT
+    // Container singleton: sobe uma vez e é reaproveitado por todas as classes de
+    // IT
     private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:16-alpine");
     private static volatile String librarianToken;
 
@@ -56,16 +60,27 @@ public abstract class AbstractApiIT {
         registry.add("spring.datasource.password", POSTGRES::getPassword);
     }
 
-    @Autowired protected MockMvc mvc;
-    @Autowired protected JsonMapper mapper;
-    @Autowired protected JdbcTemplate jdbc;
-    @Autowired private UserRepository userRepository;
-    @Autowired private PasswordEncoder passwordEncoder;
+    @Autowired
+    protected MockMvc mvc;
+    @Autowired
+    protected JsonMapper mapper;
+    @Autowired
+    protected JdbcTemplate jdbc;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    @Autowired
+    private CacheManager cacheManager;
 
-    /** Usuários ficam (o admin é criado uma vez no startup); o resto é limpo a cada teste. */
+    /**
+     * Usuários ficam (o admin é criado uma vez no startup); o resto é limpo a cada
+     * teste.
+     */
     @BeforeEach
     void cleanDatabase() {
         jdbc.execute("TRUNCATE TABLE loans, books, members RESTART IDENTITY CASCADE");
+        cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
     }
 
     // ---------- autenticação ----------
@@ -91,7 +106,7 @@ public abstract class AbstractApiIT {
 
     protected String login(String email, String password) throws Exception {
         String body = mvc.perform(jsonRequest(HttpMethod.POST, "/auth/login",
-                        Map.of("email", email, "password", password)))
+                Map.of("email", email, "password", password)))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         return JsonPath.read(body, "$.accessToken");

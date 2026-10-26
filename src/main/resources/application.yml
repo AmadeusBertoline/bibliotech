@@ -3,12 +3,17 @@ spring:
     name: bibliotech
   profiles:
     default: dev
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/bibliotech}
+    username: ${DB_USER:bibliotech}
+    password: ${DB_PASSWORD:bibliotech}
   jpa:
     open-in-view: false
     hibernate:
       ddl-auto: validate
   flyway:
     enabled: true
+    locations: classpath:db/migration,classpath:db/dev
   data:
     web:
       pageable:
@@ -16,6 +21,10 @@ spring:
         max-page-size: 100
   lifecycle:
     timeout-per-shutdown-phase: 20s
+  cache:
+    cache-names: books
+    caffeine:
+      spec: maximumSize=1000,expireAfterWrite=30s,recordStats
 
 server:
   shutdown: graceful
@@ -35,6 +44,8 @@ management:
 logging:
   pattern:
     level: "%5p [%X{requestId:-}]"
+  level:
+    com.bibliotech: DEBUG
 
 springdoc:
   swagger-ui:
@@ -47,29 +58,6 @@ app:
     jwt:
       issuer: bibliotech
       expiration: 1h
-
----
-
-spring:
-  config:
-    activate:
-      on-profile: dev
-  datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/bibliotech}
-    username: ${DB_USER:bibliotech}
-    password: ${DB_PASSWORD:bibliotech}
-  flyway:
-    locations: classpath:db/migration,classpath:db/dev
-  jpa:
-    show-sql: true
-
-logging:
-  level:
-    com.bibliotech: DEBUG
-
-app:
-  security:
-    jwt:
       secret: ${JWT_SECRET:dev-only-secret-never-use-in-prod-0123456789abcdef}
   bootstrap:
     admin:
@@ -87,7 +75,15 @@ spring:
     username: ${DB_USER}
     password: ${DB_PASSWORD}
   jpa:
-    show-sql: false
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+  cache:
+    cache-names: books
+    caffeine:
+      spec: maximumSize=1000,expireAfterWrite=30s,recordStats
 
 logging:
   level:
